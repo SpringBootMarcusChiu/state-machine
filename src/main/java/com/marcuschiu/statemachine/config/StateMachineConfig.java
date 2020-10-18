@@ -27,38 +27,62 @@ public class StateMachineConfig extends EnumStateMachineConfigurerAdapter<StateI
                 .listener(listener());
     }
 
+//    @Bean
+//    public Action<StateID, EventID> stateAction() {
+//        return ctx -> System.out.println("STATE ACTION: " + ctx.getTarget().getId());
+//    }
+//
+//    @Bean
+//    public Action<StateID, EventID> stateErrorAction() {
+//        return ctx -> System.out.println("ERROR ACTION: " + ctx.getSource().getId() + " " + ctx.getException());
+//    }
+
+    @Bean
+    public Action<StateID, EventID> stateEntryAction() {
+        return ctx -> System.out.println("STATE ENTRY ACTION: " + ctx.getTarget().getId());
+    }
+
+    @Bean
+    public Action<StateID, EventID> stateDoAction() {
+        return ctx -> System.out.println("STATE DO ACTION: " + ctx.getTarget().getId());
+    }
+
+    @Bean
+    public Action<StateID, EventID> stateExitAction() {
+        return ctx -> System.out.println("STATE EXIT ACTION: " + ctx.getSource().getId() + " -> " + ctx.getTarget().getId());
+    }
+
     @Override
     public void configure(StateMachineStateConfigurer<StateID, EventID> states) throws Exception {
         states.withStates()
                 .initial(StateID.SI)
+//                .state(StateID.S1, stateAction(), stateErrorAction()) // ERROR calling stateErrorAction() for no reason
+                .stateEntry(StateID.S1, stateEntryAction())
+                .stateDo(StateID.S1, stateDoAction())
+                .stateExit(StateID.S1, stateExitAction())
                 .end(StateID.SF)
                 .states(EnumSet.allOf(StateID.class));
     }
 
     @Bean
-    public Action<StateID, EventID> initAction1() {
-        return ctx -> System.out.println("ACTION1: " + ctx.getTarget().getId());
+    public Action<StateID, EventID> transitionAction() {
+        return ctx -> System.out.println("TRANSITION ACTION: " + ctx.getTarget().getId());
     }
 
     @Bean
-    public Action<StateID, EventID> initAction2() {
-        return ctx -> System.out.println("ACTION2: " + ctx.getTarget().getId());
-    }
-
-    @Bean
-    public Action<StateID, EventID> initAction3() {
-        return ctx -> System.out.println("ACTION3: " + ctx.getTarget().getId());
+    public Action<StateID, EventID> transitionErrorAction() {
+        return ctx -> System.out.println("TRANSITION ERROR ACTION: " + ctx.getTarget().getId());
     }
 
     @Override
     public void configure(StateMachineTransitionConfigurer<StateID, EventID> transitions) throws Exception {
         transitions
                 .withExternal()
-                .source(StateID.SI).target(StateID.S1).event(EventID.E1).action(initAction1())
+                .source(StateID.SI).target(StateID.S1).event(EventID.E1).action(transitionAction(), transitionErrorAction())
                 .and().withExternal()
-                .source(StateID.S1).target(StateID.S2).event(EventID.E2).action(initAction2())
+                .source(StateID.S1).target(StateID.S2).event(EventID.E2).guardExpression("0 > 1")
                 .and().withExternal()
-                .source(StateID.S2).target(StateID.SF).event(EventID.END).action(initAction3());
+                .source(StateID.S2).target(StateID.SF).event(EventID.END);
     }
 
     @Bean
@@ -66,7 +90,7 @@ public class StateMachineConfig extends EnumStateMachineConfigurerAdapter<StateI
         return new StateMachineListenerAdapter<StateID, EventID>() {
             @Override
             public void stateChanged(State<StateID, EventID> from, State<StateID, EventID> to) {
-                System.out.println("State change to " + to.getId());
+                System.out.println("LISTENER: state changed to " + to.getId());
             }
         };
     }
